@@ -7,32 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 class Warung extends Model
 {
     protected $fillable = [
-        'user_id',
-        'nama',
-        'foto',
-        'deskripsi',
-        'rating',
-        'status',
-        'estimasi_waktu',
-        'kategori',
-        'kontak',        // [PERUBAHAN]
-        'area_kampus',   // [PERUBAHAN]
-        'alamat',        // [PERUBAHAN]
-        'jam_buka',      // [PERUBAHAN]
-        'jam_tutup',     // [PERUBAHAN]
-        'status_verifikasi',
-        'catatan_verifikasi',
-        'diverifikasi_oleh',
-        'diverifikasi_pada',
+        'user_id', 'nama', 'deskripsi', 'rating', 'status',
+        'kategori', 'estimasi_waktu', 'foto', 'kontak',
+        'area_kampus', 'alamat', 'jam_buka', 'jam_tutup',
+        'status_verifikasi', 'catatan_verifikasi',
+        'diverifikasi_oleh', 'diverifikasi_pada',
     ];
-
-    public function menus()
-    {
-        return $this->hasMany(Menu::class);
-    }
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function menus()
+    {
+        return $this->hasMany(Menu::class);
     }
 }
