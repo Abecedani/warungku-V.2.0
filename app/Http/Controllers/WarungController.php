@@ -4,39 +4,89 @@ namespace App\Http\Controllers;
 
 use App\Models\Warung;
 use App\Models\Menu;
-use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class WarungController extends Controller
 {
-    public function home()
-    {
-        // [PERUBAHAN] Public home hanya menampilkan warung yang buka dan sudah disetujui admin
-        $warungs = Warung::where('status', 'buka')
-            ->where('status_verifikasi', 'disetujui')
-            ->take(3)
-            ->get();
-
-        // [PERUBAHAN] Total warung yang dihitung hanya warung terverifikasi
-        $totalWarung = Warung::where('status_verifikasi', 'disetujui')->count();
-
-        $totalMenu = Menu::count();
-        $totalUser = User::count();
-
-        return view('public.home', compact(
-            'warungs',
-            'totalWarung',
-            'totalMenu',
-            'totalUser'
-        ));
-    }
-
+    // ===== PUBLIC =====
     public function index()
     {
-        // [PERUBAHAN] Daftar warung public hanya menampilkan warung yang sudah disetujui admin
-        $warungs = Warung::where('status_verifikasi', 'disetujui')
-            ->latest()
-            ->get();
+        $warungs = Warung::where('is_verified', true)->get();
+        return view('pembeli.warungs', compact('warungs'));
+    }
 
-        return view('public.warung.index', compact('warungs'));
+    // ===== PENJUAL =====
+    public function create()
+    {
+        return view('warungs.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'location_detail' => 'required|string',
+            'description' => 'nullable|string',
+        ]);
+
+        Warung::create([
+            'user_id' => Auth::id(),
+            'name' => $request->name,
+            'location_detail' => $request->location_detail,
+            'description' => $request->description,
+            'is_open' => false,
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Warung berhasil didaftarkan!');
+    }
+
+    public function dashboard()
+    {
+        $warung = auth()->user()->warung;
+        if (!$warung) {
+            return redirect()->route('warungs.create');
+        }
+        $menus = $warung->menus;
+        return view('warungs.dashboard', compact('warung', 'menus'));
+    }
+
+    public function toggleStatus(Request $request)
+    {
+        $warung = auth()->user()->warung;
+        $warung->is_open = !$warung->is_open;
+        $warung->save();
+        return response()->json(['is_open' => (bool) $warung->is_open]);
+    }
+
+    public function profil()
+    {
+        $warung = auth()->user()->warung;
+        return view('warungs.profil', compact('warung'));
+    }
+
+    public function updateProfil(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'location_detail' => 'required|string',
+            'description' => 'nullable|string',
+        ]);
+
+        auth()->user()->warung->update($request->only('name', 'location_detail', 'description'));
+        return back()->with('success', 'Profil warung berhasil diupdate!');
+    }
+
+    public function destroyWarung()
+    {
+        $warung = auth()->user()->warung;
+        $warung->delete();
+        return redirect()->route('warungs.create')->with('success', 'Warung berhasil dihapus.');
+    }
+    public function destroyImage($image)
+    {
+        Storage::disk('public')->delete($image);
+        return back()->with('success', 'Foto berhasil dihapus.');
     }
 }
