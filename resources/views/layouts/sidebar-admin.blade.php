@@ -1,7 +1,11 @@
 <aside class="sidebar bg-white p-3">
     <div class="d-flex align-items-center gap-2 p-3 rounded-3 mb-4" style="background: var(--orange-light);">
-        <div class="sidebar-avatar">
-            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+        <div class="sidebar-avatar" style="overflow:hidden;">
+            @if(auth()->user()->avatar)
+                <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;">
+            @else
+                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            @endif
         </div>
         <div class="overflow-hidden">
             <p class="fw-bold mb-0 small text-truncate">Admin Panel</p>
@@ -27,10 +31,10 @@
         <i class="bi bi-receipt"></i> Transaksi
     </a>
     <a href="{{ route('admin.akun') }}" class="{{ request()->routeIs('admin.akun') ? 'active' : '' }}">
-    <i class="bi bi-person-circle"></i> Akun Saya
-</a>
+        <i class="bi bi-person-circle"></i> Akun Saya
+    </a>
     <a href="{{ route('admin.pengaturan') }}" class="{{ request()->routeIs('admin.pengaturan') ? 'active' : '' }}">
         <i class="bi bi-gear"></i> Pengaturan
     </a>
-    
+
 </aside>
