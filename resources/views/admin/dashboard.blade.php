@@ -50,6 +50,35 @@
         </div>
     </div>
 
+    {{-- Grafik --}}
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="bg-white rounded-3 shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">Pertumbuhan Pengguna</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="toggleUserChart('week', this)">Mingguan</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleUserChart('month', this)">Bulanan</button>
+                    </div>
+                </div>
+                <canvas id="userGrowthChart" height="220"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="bg-white rounded-3 shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">Transaksi</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="toggleTransactionChart('week', this)">Mingguan</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleTransactionChart('month', this)">Bulanan</button>
+                    </div>
+                </div>
+                <canvas id="transactionChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3">
         {{-- Warung Pending --}}
         <div class="col-md-6">
@@ -98,4 +127,88 @@
     </div>
 
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const userGrowthData = {
+    week: @json($userGrowthWeekly),
+    month: @json($userGrowthMonthly)
+};
+
+const transactionData = {
+    week: @json($transactionWeekly),
+    month: @json($transactionMonthly)
+};
+
+// Chart Pertumbuhan Pengguna
+const userCtx = document.getElementById('userGrowthChart').getContext('2d');
+let userChart = new Chart(userCtx, {
+    type: 'line',
+    data: {
+        labels: userGrowthData.week.labels,
+        datasets: [{
+            label: 'Pengguna Baru',
+            data: userGrowthData.week.data,
+            borderColor: '#e65c00',
+            backgroundColor: 'rgba(230, 92, 0, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+
+function toggleUserChart(period, btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    userChart.data.labels = userGrowthData[period].labels;
+    userChart.data.datasets[0].data = userGrowthData[period].data;
+    userChart.update();
+}
+
+// Chart Transaksi (jumlah + nominal)
+const txCtx = document.getElementById('transactionChart').getContext('2d');
+let txChart = new Chart(txCtx, {
+    data: {
+        labels: transactionData.week.labels,
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Jumlah Transaksi',
+                data: transactionData.week.counts,
+                backgroundColor: 'rgba(230, 92, 0, 0.5)',
+                yAxisID: 'y'
+            },
+            {
+                type: 'line',
+                label: 'Total Nominal (Rp)',
+                data: transactionData.week.totals,
+                borderColor: '#28a745',
+                yAxisID: 'y1',
+                tension: 0.3
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { type: 'linear', position: 'left', beginAtZero: true, ticks: { precision: 0 } },
+            y1: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } }
+        }
+    }
+});
+
+function toggleTransactionChart(period, btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    txChart.data.labels = transactionData[period].labels;
+    txChart.data.datasets[0].data = transactionData[period].counts;
+    txChart.data.datasets[1].data = transactionData[period].totals;
+    txChart.update();
+}
+</script>
 @endsection

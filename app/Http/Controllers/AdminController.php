@@ -28,6 +28,11 @@ class AdminController extends Controller
         $recentOrders = Order::with(['user', 'warung'])->latest()->take(5)->get();
         $warungsNeedVerify = Warung::where('is_verified', false)->with('user')->latest()->take(5)->get();
 
+        $userGrowthWeekly = $this->getUserGrowth('week');
+        $userGrowthMonthly = $this->getUserGrowth('month');
+        $transactionWeekly = $this->getTransactionStats('week');
+        $transactionMonthly = $this->getTransactionStats('month');
+
         return view('admin.dashboard', compact(
             'totalUsers',
             'totalWarungs',
@@ -35,8 +40,71 @@ class AdminController extends Controller
             'totalOrders',
             'totalRevenue',
             'recentOrders',
-            'warungsNeedVerify'
+            'warungsNeedVerify',
+            'userGrowthWeekly',
+            'userGrowthMonthly',
+            'transactionWeekly',
+            'transactionMonthly'
         ));
+    }
+
+    private function getUserGrowth($period)
+    {
+        $labels = [];
+        $data = [];
+
+        if ($period === 'week') {
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $labels[] = $date->translatedFormat('d M');
+                $data[] = User::where('role', '!=', 'admin')
+                    ->whereDate('created_at', $date->toDateString())
+                    ->count();
+            }
+        } else {
+            for ($i = 11; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $labels[] = $date->translatedFormat('M Y');
+                $data[] = User::where('role', '!=', 'admin')
+                    ->whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->count();
+            }
+        }
+
+        return ['labels' => $labels, 'data' => $data];
+    }
+
+    private function getTransactionStats($period)
+    {
+        $labels = [];
+        $counts = [];
+        $totals = [];
+
+        if ($period === 'week') {
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $labels[] = $date->translatedFormat('d M');
+                $counts[] = Order::whereDate('created_at', $date->toDateString())->count();
+                $totals[] = Order::whereDate('created_at', $date->toDateString())
+                    ->where('status', 'selesai')
+                    ->sum('total_price');
+            }
+        } else {
+            for ($i = 11; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $labels[] = $date->translatedFormat('M Y');
+                $counts[] = Order::whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->count();
+                $totals[] = Order::whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->where('status', 'selesai')
+                    ->sum('total_price');
+            }
+        }
+
+        return ['labels' => $labels, 'counts' => $counts, 'totals' => $totals];
     }
 
     public function warungs()
